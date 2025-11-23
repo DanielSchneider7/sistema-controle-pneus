@@ -1,0 +1,72 @@
+-- Criar o banco de dados
+CREATE DATABASE IF NOT EXISTS controle_pneus;
+USE controle_pneus;
+
+-- Tabela de usuários
+CREATE TABLE usuarios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    usuario VARCHAR(50) NOT NULL UNIQUE,
+    senha VARCHAR(255) NOT NULL,
+    perfil ENUM('admin', 'borracheiro') NOT NULL
+);
+
+-- Inserir usuário padrão
+INSERT INTO usuarios (nome, usuario, senha, perfil)
+VALUES ('Administrador', 'admin', '12345', 'admin');
+
+-- Tabela de pneus
+CREATE TABLE pneus (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    marca VARCHAR(100),
+    modelo VARCHAR(100),
+    medida VARCHAR(50),
+    data_aquisicao DATE,
+    valor DECIMAL(10,2),
+    status ENUM('novo','em uso','reformado','descartado') DEFAULT 'novo',
+    vida_util INT
+);
+
+-- Tabela de veículos
+CREATE TABLE veiculos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    placa VARCHAR(10) NOT NULL UNIQUE,
+    modelo VARCHAR(100),
+    quilometragem INT,
+    tipo VARCHAR(100)
+);
+
+-- Tabela de movimentações dos pneus
+CREATE TABLE movimentacoes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    pneu_id INT NOT NULL,
+    veiculo_id INT,
+    posicao VARCHAR(50),
+    data_mov DATE NOT NULL,
+    quilometragem INT,
+    tipo ENUM('instalacao','retirada') NOT NULL,
+    FOREIGN KEY (pneu_id) REFERENCES pneus(id),
+    FOREIGN KEY (veiculo_id) REFERENCES veiculos(id)
+);
+
+-- Tabela de manutenções
+CREATE TABLE manutencoes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    pneu_id INT NOT NULL,
+    tipo ENUM('calibragem','reforma','recapagem') NOT NULL,
+    data DATE NOT NULL,
+    custo DECIMAL(10,2),
+    descricao TEXT,
+    FOREIGN KEY (pneu_id) REFERENCES pneus(id)
+);
+
+-- Tabela de alertas
+CREATE TABLE alertas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    pneu_id INT NOT NULL,
+    tipo VARCHAR(100),
+    mensagem TEXT,
+    data_alerta DATE,
+    FOREIGN KEY (pneu_id) REFERENCES pneus(id)
+);

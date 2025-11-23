@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Controle de Veículos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f3f3f3;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+            color: #333;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1100px;
+            margin: auto;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .card h2 {
+            margin-bottom: 15px;
+        }
+
+        input, button {
+            padding: 10px;
+            margin-bottom: 10px;
+            width: 100%;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background: #0078ff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        button:hover {
+            background: #005fcc;
+        }
+
+        .success {
+            color: green;
+            margin-top: 10px;
+        }
+
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        table thead {
+            background: #0078ff;
+            color: white;
+        }
+
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+
+        .delete-btn {
+            background: red;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .delete-btn:hover {
+            background: darkred;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Controle de Manutenção de Veículos</h1>
+
+<div class="container">
+
+    <!-- FORMULÁRIO -->
+    <div class="card">
+        <h2>Cadastrar Veículo</h2>
+
+        <form id="form-veiculo">
+            <input type="text" id="marca" placeholder="Marca" required>
+            <input type="text" id="modelo" placeholder="Modelo" required>
+            <input type="number" id="ano" placeholder="Ano" required>
+            <input type="text" id="placa" placeholder="Placa" required>
+            <input type="number" id="km" placeholder="Quilometragem atual" required>
+
+            <button type="submit">Cadastrar Veículo</button>
+        </form>
+        <p id="msg"></p>
+    </div>
+
+    <!-- LISTAGEM -->
+    <div class="card">
+        <h2>Veículos cadastrados</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Marca</th>
+                    <th>Modelo</th>
+                    <th>Ano</th>
+                    <th>Placa</th>
+                    <th>KM</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="lista-veiculos">
+                <tr><td colspan="7" align="center">Carregando...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+async function carregarVeiculos() {
+    const lista = document.getElementById("lista-veiculos");
+    lista.innerHTML = "<tr><td colspan='7' align='center'>Carregando...</td></tr>";
+
+    const resp = await fetch("http://localhost:3001/api/veiculos");
+    const dados = await resp.json();
+
+    if (dados.length === 0) {
+        lista.innerHTML = "<tr><td colspan='7' align='center'>Nenhum veículo cadastrado.</td></tr>";
+        return;
+    }
+
+    lista.innerHTML = "";
+
+    dados.forEach(v => {
+        lista.innerHTML += `
+            <tr>
+                <td>${v.id}</td>
+                <td>${v.marca}</td>
+                <td>${v.modelo}</td>
+                <td>${v.ano}</td>
+                <td>${v.placa}</td>
+                <td>${v.km}</td>
+                <td><button class="delete-btn" onclick="excluir(${v.id})">Excluir</button></td>
+            </tr>
+        `;
+    });
+}
+
+async function excluir(id) {
+    if (!confirm("Deseja remover este veículo?")) return;
+
+    const resp = await fetch(`http://localhost:3001/api/veiculos/${id}`, {
+        method: "DELETE"
+    });
+
+    if (resp.ok) carregarVeiculos();
+}
+
+document.getElementById("form-veiculo").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const dados = {
+        marca: document.getElementById("marca").value,
+        modelo: document.getElementById("modelo").value,
+        ano: document.getElementById("ano").value,
+        placa: document.getElementById("placa").value,
+        km: document.getElementById("km").value
+    };
+
+    const resp = await fetch("http://localhost:3001/api/veiculos", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(dados)
+    });
+
+    const msg = document.getElementById("msg");
+
+    if (resp.ok) {
+        msg.textContent = "Veículo cadastrado com sucesso!";
+        msg.className = "success";
+        carregarVeiculos();
+        e.target.reset();
+    } else {
+        msg.textContent = "Erro ao cadastrar.";
+        msg.className = "error";
+    }
+});
+
+carregarVeiculos();
+</script>
+
+</body>
+</html>

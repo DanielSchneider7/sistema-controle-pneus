@@ -1,70 +1,35 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const pool = require('../db');
+const db = require("../db");
 
-// LISTAR VEÍCULOS
-router.get('/', async (req, res) => {
-  try {
-    const [rows] = await pool.query('SELECT * FROM veiculos ORDER BY id DESC');
-    res.json(rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Erro no servidor' });
-  }
+// Listar veículos
+router.get("/", (req, res) => {
+    db.all("SELECT * FROM veiculos", [], (err, rows) => {
+        if (err) return res.status(500).json({ erro: err.message });
+        res.json(rows);
+    });
 });
 
-// CADASTRAR VEÍCULO
-router.post('/', async (req, res) => {
-console.log("Recebido no backend:", req.body);
+// Cadastrar veículo
+router.post("/", (req, res) => {
+    const { marca, modelo, ano, placa, km } = req.body;
 
-  try {
-    const { placa, modelo, marca, ano, quilometragem } = req.body;
-
-    const [result] = await pool.query(
-      'INSERT INTO veiculos (placa, modelo, marca, ano, km) VALUES (?, ?, ?, ?, ?)',
-      [placa, modelo, marca, ano, quilometragem || 0]
+    db.run(
+        "INSERT INTO veiculos (marca, modelo, ano, placa, km) VALUES (?, ?, ?, ?, ?)",
+        [marca, modelo, ano, placa, km],
+        function (err) {
+            if (err) return res.status(500).json({ erro: err.message });
+            res.json({ id: this.lastID, ...req.body });
+        }
     );
-
-    const [rows] = await pool.query('SELECT * FROM veiculos WHERE id = ?', [
-      result.insertId,
-    ]);
-
-    res.status(201).json(rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Erro no servidor' });
-  }
 });
 
-// EDITAR VEÍCULO
-router.put('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const campos = req.body;
-    await pool.query('UPDATE veiculos SET ? WHERE id = ?', [campos, id]);
-
-    const [rows] = await pool.query(
-      'SELECT * FROM veiculos WHERE id = ?', 
-      [id]
-    );
-
-    res.json(rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Erro no servidor' });
-  }
-});
-
-// EXCLUIR VEÍCULO
-router.delete('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    await pool.query('DELETE FROM veiculos WHERE id = ?', [id]);
-    res.json({ message: 'Veículo removido' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Erro no servidor' });
-  }
+// Deletar veículo
+router.delete("/:id", (req, res) => {
+    db.run("DELETE FROM veiculos WHERE id = ?", [req.params.id], function (err) {
+        if (err) return res.status(500).json({ erro: err.message });
+        res.json({ sucesso: true });
+    });
 });
 
 module.exports = router;

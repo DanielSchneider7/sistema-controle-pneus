@@ -142,43 +142,63 @@
 </div>
 
 <script>
+const API_BASE = "https://sistema-controle-pneus.onrender.com";
+
 async function carregarVeiculos() {
     const lista = document.getElementById("lista-veiculos");
     lista.innerHTML = "<tr><td colspan='7' align='center'>Carregando...</td></tr>";
 
-    const resp = await fetch("http://localhost:3001/api/veiculos");
-    const dados = await resp.json();
+    try {
+        const resp = await fetch(`${API_BASE}/api/veiculos`);
+        if (!resp.ok) {
+            throw new Error("Erro ao buscar veículos");
+        }
 
-    if (dados.length === 0) {
-        lista.innerHTML = "<tr><td colspan='7' align='center'>Nenhum veículo cadastrado.</td></tr>";
-        return;
+        const dados = await resp.json();
+
+        if (!dados || dados.length === 0) {
+            lista.innerHTML = "<tr><td colspan='7' align='center'>Nenhum veículo cadastrado.</td></tr>";
+            return;
+        }
+
+        lista.innerHTML = "";
+
+        dados.forEach(v => {
+            lista.innerHTML += `
+                <tr>
+                    <td>${v.id}</td>
+                    <td>${v.marca}</td>
+                    <td>${v.modelo}</td>
+                    <td>${v.ano}</td>
+                    <td>${v.placa}</td>
+                    <td>${v.km}</td>
+                    <td><button class="delete-btn" onclick="excluir(${v.id})">Excluir</button></td>
+                </tr>
+            `;
+        });
+    } catch (erro) {
+        console.error(erro);
+        lista.innerHTML = "<tr><td colspan='7' align='center'>Erro ao carregar veículos.</td></tr>";
     }
-
-    lista.innerHTML = "";
-
-    dados.forEach(v => {
-        lista.innerHTML += `
-            <tr>
-                <td>${v.id}</td>
-                <td>${v.marca}</td>
-                <td>${v.modelo}</td>
-                <td>${v.ano}</td>
-                <td>${v.placa}</td>
-                <td>${v.km}</td>
-                <td><button class="delete-btn" onclick="excluir(${v.id})">Excluir</button></td>
-            </tr>
-        `;
-    });
 }
 
 async function excluir(id) {
     if (!confirm("Deseja remover este veículo?")) return;
 
-    const resp = await fetch(`http://localhost:3001/api/veiculos/${id}`, {
-        method: "DELETE"
-    });
+    try {
+        const resp = await fetch(`${API_BASE}/api/veiculos/${id}`, {
+            method: "DELETE"
+        });
 
-    if (resp.ok) carregarVeiculos();
+        if (resp.ok) {
+            carregarVeiculos();
+        } else {
+            alert("Erro ao excluir veículo.");
+        }
+    } catch (erro) {
+        console.error(erro);
+        alert("Erro ao excluir veículo.");
+    }
 }
 
 document.getElementById("form-veiculo").addEventListener("submit", async (e) => {
@@ -192,20 +212,26 @@ document.getElementById("form-veiculo").addEventListener("submit", async (e) => 
         km: document.getElementById("km").value
     };
 
-    const resp = await fetch("http://localhost:3001/api/veiculos", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(dados)
-    });
-
     const msg = document.getElementById("msg");
 
-    if (resp.ok) {
-        msg.textContent = "Veículo cadastrado com sucesso!";
-        msg.className = "success";
-        carregarVeiculos();
-        e.target.reset();
-    } else {
+    try {
+        const resp = await fetch(`${API_BASE}/api/veiculos`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(dados)
+        });
+
+        if (resp.ok) {
+            msg.textContent = "Veículo cadastrado com sucesso!";
+            msg.className = "success";
+            carregarVeiculos();
+            e.target.reset();
+        } else {
+            msg.textContent = "Erro ao cadastrar.";
+            msg.className = "error";
+        }
+    } catch (erro) {
+        console.error(erro);
         msg.textContent = "Erro ao cadastrar.";
         msg.className = "error";
     }
@@ -213,6 +239,7 @@ document.getElementById("form-veiculo").addEventListener("submit", async (e) => 
 
 carregarVeiculos();
 </script>
+
 
 </body>
 </html>
